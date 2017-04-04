@@ -1,1 +1,1 @@
-from shapeshiftio import ShapeShiftIO
+from .shapeshiftio import ShapeShiftIO

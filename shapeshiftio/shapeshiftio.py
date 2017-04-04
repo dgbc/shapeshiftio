@@ -1,28 +1,27 @@
-#!/usr/bin/python
-
 import urllib
-import urllib2
+try:
+    # For Python 3.0 and later
+    from urllib.request import urlopen
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen
 import json
 
 
-
-class ShapeShiftIO:
+class ShapeShiftIO(object):
     def __init__(self):
         """ 
         https://shapeshift.io/api 
         """
         self.baseurl = "https://shapeshift.io"
 
-
     def get_request(self, url):
-
-        ret = urllib2.urlopen(urllib2.Request(url))
+        ret = urlopen(urllib2.Request(url))
         return json.loads(ret.read())
 
     def post_request(self, url, postdata):
-        ret = urllib2.urlopen(urllib2.Request(url, urllib.urlencode(postdata)))
+        ret = urlopen(urllib2.Request(url, urllib.urlencode(postdata)))
         return json.loads(ret.read())
-
 
     def rate(self, pair):
         """
@@ -52,23 +51,23 @@ class ShapeShiftIO:
                 "limit" : "1.2345"
             }
         """
-        self.url =  self.baseurl + "/limit/" + pair
+        self.url = self.baseurl + "/limit/" + pair
         return self.get_request(self.url)
 
     def market_info(self, pair):
         """
         This gets the market info (pair, rate, limit, minimum limit, miner fee)
 
-	[pair] (OPTIONAL) is any valid coin pair such as btc_ltc or ltc_btc.
-	The pair is not required and if not specified will return an array of all market infos.
+        [pair] (OPTIONAL) is any valid coin pair such as btc_ltc or ltc_btc.
+        The pair is not required and if not specified will return an array of all market infos.
 
-	Success Output:
+        Success Output:
             {   
-	        "pair"     : "btc_ltc",
-	        "rate"     : 130.12345678,
-	        "limit"    : 1.2345,
-	        "min"      : 0.02621232,
-	        "minerFee" : 0.0001
+            "pair"     : "btc_ltc",
+            "rate"     : 130.12345678,
+            "limit"    : 1.2345,
+            "min"      : 0.02621232,
+            "minerFee" : 0.0001
             }
 
         """
@@ -98,7 +97,7 @@ class ShapeShiftIO:
 
     def tx_status(self, address):
         """
-	This returns the status of the most recent deposit transaction to the address. 
+        This returns the status of the most recent deposit transaction to the address.
         [address] is the deposit address to look up.
  
         Success Output:  (various depending on status)
@@ -176,30 +175,30 @@ class ShapeShiftIO:
         return self.get_request(self.url)
 
     def tx_by_apikey(self, apiKey):
-	"""
-	Allows vendors to get a list of all transactions that have ever been done using a specific API key. Transactions are created with an affilliate PUBLIC KEY, but they are looked up using the linked PRIVATE KEY, to protect the privacy of our affiliates' account details. 
+        """
+        Allows vendors to get a list of all transactions that have ever been done using a specific API key. Transactions are created with an affilliate PUBLIC KEY, but they are looked up using the linked PRIVATE KEY, to protect the privacy of our affiliates' account details.
 
-        [apiKey] is the affiliate's PRIVATE api key.
- 
-            [   
-                {
-                    inputTXID: [Transaction ID of the input coin going into shapeshift],
-                    inputAddress: [Address that the input coin was paid to for this shift],
-                    inputCurrency: [Currency type of the input coin],
-                    inputAmount: [Amount of input coin that was paid in on this shift],
-                    outputTXID: [Transaction ID of the output coin going out to user],
-                    outputAddress: [Address that the output coin was sent to for this shift],
-                    outputCurrency: [Currency type of the output coin],
-                    outputAmount: [Amount of output coin that was paid out on this shift],
-                    shiftRate: [The effective rate the user got on this shift.],
-                    status: [status of the shift]
-                 }
-                (one listing per transaction returned)
-            ]
- 
-        The status can be "received", "pending", "verifying_send", "sent_exact", "exchanged". "sent_exact" is the same as
-        "exchanged", for all intensive purposes, meaning the shift completed, funds were sent in and out and there was no error.
-	"""
+            [apiKey] is the affiliate's PRIVATE api key.
+
+                [
+                    {
+                        inputTXID: [Transaction ID of the input coin going into shapeshift],
+                        inputAddress: [Address that the input coin was paid to for this shift],
+                        inputCurrency: [Currency type of the input coin],
+                        inputAmount: [Amount of input coin that was paid in on this shift],
+                        outputTXID: [Transaction ID of the output coin going out to user],
+                        outputAddress: [Address that the output coin was sent to for this shift],
+                        outputCurrency: [Currency type of the output coin],
+                        outputAmount: [Amount of output coin that was paid out on this shift],
+                        shiftRate: [The effective rate the user got on this shift.],
+                        status: [status of the shift]
+                     }
+                    (one listing per transaction returned)
+                ]
+
+            The status can be "received", "pending", "verifying_send", "sent_exact", "exchanged". "sent_exact" is the same as
+            "exchanged", for all intensive purposes, meaning the shift completed, funds were sent in and out and there was no error.
+        """
         self.url = self.baseurl + "/txbyapikey/" + apiKey
         return self.get_request(self.url)
 
@@ -210,7 +209,7 @@ class ShapeShiftIO:
         [address] the address that output coin was sent to for the shift
         [apiKey] is the affiliate's PRIVATE api key.
 
-	Success Output:
+        Success Output:
 
             [   
                 {   
@@ -254,137 +253,137 @@ class ShapeShiftIO:
         return self.get_request(self.url)
 
     def shift(self, postdata):
-	"""
-	This is the primary data input into ShapeShift. 
-
-        data required:
-        withdrawal     = the address for resulting coin to be sent to
-        pair       = what coins are being exchanged in the form [input coin]_[output coin]  ie btc_ltc
-        returnAddress  = (Optional) address to return deposit to if anything goes wrong with exchange
-        destTag    = (Optional) Destination tag that you want appended to a Ripple payment to you
-        rsAddress  = (Optional) For new NXT accounts to be funded, you supply this on NXT payment to you
-        apiKey     = (Optional) Your affiliate PUBLIC KEY, for volume tracking, affiliate payments, split-shifts, etc...
- 
-        example data: {"withdrawal":"AAAAAAAAAAAAA", "pair":"btc_ltc", returnAddress:"BBBBBBBBBBB"}
- 
-        Success Output:
-            {
-                deposit: [Deposit Address (or memo field if input coin is BTS / BITUSD)],
-                depositType: [Deposit Type (input coin symbol)],
-                withdrawal: [Withdrawal Address], //-- will match address submitted in post
-                withdrawalType: [Withdrawal Type (output coin symbol)],
-                public: [NXT RS-Address pubkey (if input coin is NXT)],
-                xrpDestTag : [xrpDestTag (if input coin is XRP)],
-                apiPubKey: [public API attached to this shift, if one was given]
-            }   
         """
+        This is the primary data input into ShapeShift.
+
+            data required:
+            withdrawal     = the address for resulting coin to be sent to
+            pair       = what coins are being exchanged in the form [input coin]_[output coin]  ie btc_ltc
+            returnAddress  = (Optional) address to return deposit to if anything goes wrong with exchange
+            destTag    = (Optional) Destination tag that you want appended to a Ripple payment to you
+            rsAddress  = (Optional) For new NXT accounts to be funded, you supply this on NXT payment to you
+            apiKey     = (Optional) Your affiliate PUBLIC KEY, for volume tracking, affiliate payments, split-shifts, etc...
+
+            example data: {"withdrawal":"AAAAAAAAAAAAA", "pair":"btc_ltc", returnAddress:"BBBBBBBBBBB"}
+
+            Success Output:
+                {
+                    deposit: [Deposit Address (or memo field if input coin is BTS / BITUSD)],
+                    depositType: [Deposit Type (input coin symbol)],
+                    withdrawal: [Withdrawal Address], //-- will match address submitted in post
+                    withdrawalType: [Withdrawal Type (output coin symbol)],
+                    public: [NXT RS-Address pubkey (if input coin is NXT)],
+                    xrpDestTag : [xrpDestTag (if input coin is XRP)],
+                    apiPubKey: [public API attached to this shift, if one was given]
+                }
+            """
         self.url = self.baseurl + "/shift"
         return self.post_request(self.url, postdata)
 
     def set_mail(self, postdata):
-	"""
-	This call requests a receipt for a transaction. The email address will be added to the conduit associated with that transaction as well. (Soon it will also send receipts to subsequent transactions on that conduit) 
+        """
+        This call requests a receipt for a transaction. The email address will be added to the conduit associated with that transaction as well. (Soon it will also send receipts to subsequent transactions on that conduit)
 
-        data required:
-        email    = the address for receipt email to be sent to
-        txid       = the transaction id of the transaction TO the user (ie the txid for the withdrawal NOT the deposit)
-        example data {"email":"mail@example.com", "txid":"123ABC"}
- 
-        Success Output:
-            {"email":
-                {
-                "status":"success",
-                "message":"Email receipt sent"
+            data required:
+            email    = the address for receipt email to be sent to
+            txid       = the transaction id of the transaction TO the user (ie the txid for the withdrawal NOT the deposit)
+            example data {"email":"mail@example.com", "txid":"123ABC"}
+
+            Success Output:
+                {"email":
+                    {
+                    "status":"success",
+                    "message":"Email receipt sent"
+                    }
                 }
-            }
-	"""
+        """
         self.url = self.baseurl + "/mail"
         return self.post_request(self.url, postdata)
 
     def send_amount(self, postdata):
-	"""
-	This call allows you to request a fixed amount to be sent to the withdrawal address. You provide a withdrawal address and the amount you want sent to it. We return the amount to deposit and the address to deposit to. This allows you to use shapeshift as a payment mechanism. This call also allows you to request a quoted price on the amount of a transaction without a withdrawal address.
-	//1. Send amount request
- 
- 
-        Data required:
- 
-            amount          = the amount to be sent to the withdrawal address
-            withdrawal      = the address for coin to be sent to
-            pair            = what coins are being exchanged in the form [input coin]_[output coin]  ie ltc_btc
-            returnAddress   = (Optional) address to return deposit to if anything goes wrong with exchange
-            destTag         = (Optional) Destination tag that you want appended to a Ripple payment to you
-            rsAddress       = (Optional) For new NXT accounts to be funded, supply this on NXT payment to you
-            apiKey          = (Optional) Your affiliate PUBLIC KEY, for volume tracking, affiliate payments, split-shifts, etc...
- 
-        example data {"amount":123, "withdrawal":"123ABC", "pair":"ltc_btc", returnAddress:"BBBBBBB"}  Success Output:
- 
- 
-        {
-             success:
-              {
-                pair: [pair],
-                withdrawal: [Withdrawal Address], //-- will match address submitted in post
-                withdrawalAmount: [Withdrawal Amount], // Amount of the output coin you will receive
-                deposit: [Deposit Address (or memo field if input coin is BTS / BITUSD)],
-                depositAmount: [Deposit Amount], // Exact amount of input coin to send in
-                expiration: [timestamp when this will expire],
-                quotedRate: [the exchange rate to be honored]
-                apiPubKey: [public API attached to this shift, if one was given]
-              }
-        }
-     
- 
- 
-     
-        //2. Quoted Price request
- 
- 
-        //Note :  This request will only return information about a quoted rate
-        //         This request will NOT generate the deposit address.
- 
- 
- 
-          Data required:
- 
-            amount  = the amount to be sent to the withdrawal address
-            pair    = what coins are being exchanged in the form [input coin]_[output coin]  ie ltc_btc
- 
-            example data {"amount":123, "pair":"ltc_btc"}
- 
- 
-          Success Output:
+        """
+        This call allows you to request a fixed amount to be sent to the withdrawal address. You provide a withdrawal address and the amount you want sent to it. We return the amount to deposit and the address to deposit to. This allows you to use shapeshift as a payment mechanism. This call also allows you to request a quoted price on the amount of a transaction without a withdrawal address.
+        //1. Send amount request
+
+
+            Data required:
+
+                amount          = the amount to be sent to the withdrawal address
+                withdrawal      = the address for coin to be sent to
+                pair            = what coins are being exchanged in the form [input coin]_[output coin]  ie ltc_btc
+                returnAddress   = (Optional) address to return deposit to if anything goes wrong with exchange
+                destTag         = (Optional) Destination tag that you want appended to a Ripple payment to you
+                rsAddress       = (Optional) For new NXT accounts to be funded, supply this on NXT payment to you
+                apiKey          = (Optional) Your affiliate PUBLIC KEY, for volume tracking, affiliate payments, split-shifts, etc...
+
+            example data {"amount":123, "withdrawal":"123ABC", "pair":"ltc_btc", returnAddress:"BBBBBBB"}  Success Output:
+
 
             {
                  success:
                   {
                     pair: [pair],
+                    withdrawal: [Withdrawal Address], //-- will match address submitted in post
                     withdrawalAmount: [Withdrawal Amount], // Amount of the output coin you will receive
+                    deposit: [Deposit Address (or memo field if input coin is BTS / BITUSD)],
                     depositAmount: [Deposit Amount], // Exact amount of input coin to send in
                     expiration: [timestamp when this will expire],
                     quotedRate: [the exchange rate to be honored]
-                    minerFee: [miner fee for this transaction]
+                    apiPubKey: [public API attached to this shift, if one was given]
                   }
             }
-	"""
+
+
+
+
+            //2. Quoted Price request
+
+
+            //Note :  This request will only return information about a quoted rate
+            //         This request will NOT generate the deposit address.
+
+
+
+              Data required:
+
+                amount  = the amount to be sent to the withdrawal address
+                pair    = what coins are being exchanged in the form [input coin]_[output coin]  ie ltc_btc
+
+                example data {"amount":123, "pair":"ltc_btc"}
+
+
+              Success Output:
+
+                {
+                     success:
+                      {
+                        pair: [pair],
+                        withdrawalAmount: [Withdrawal Amount], // Amount of the output coin you will receive
+                        depositAmount: [Deposit Amount], // Exact amount of input coin to send in
+                        expiration: [timestamp when this will expire],
+                        quotedRate: [the exchange rate to be honored]
+                        minerFee: [miner fee for this transaction]
+                      }
+                }
+        """
         self.url = self.baseurl + "/sendamount"
         return self.post_request(self.url, postdata)
 
     def cancel_pending(self, postdata):
-	"""
-	This call allows you to request for canceling a pending transaction by the deposit address. If there is fund sent to the deposit address, this pending transaction cannot be canceled.
+        """
+        This call allows you to request for canceling a pending transaction by the deposit address. If there is fund sent to the deposit address, this pending transaction cannot be canceled.
 
-        data required: address  = The deposit address associated with the pending transaction
+            data required: address  = The deposit address associated with the pending transaction
 
-        Example data : {address : "1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v"}
+            Example data : {address : "1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v"}
 
-        Success Output:
+            Success Output:
 
-         {  success  : " Pending Transaction cancelled "  }
+             {  success  : " Pending Transaction cancelled "  }
 
-        Error Output:
+            Error Output:
 
-         {  error  : {errorMessage}  }
-	"""
+             {  error  : {errorMessage}  }
+        """
         self.url = self.baseurl + "/cancelpending"
         return self.post_request(self.url, postdata)
