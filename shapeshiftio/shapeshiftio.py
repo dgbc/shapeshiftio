@@ -1,10 +1,10 @@
-import urllib
-try:
-    # For Python 3.0 and later
-    from urllib.request import urlopen
-except ImportError:
-    # Fall back to Python 2's urllib2
-    from urllib2 import urlopen
+# try:
+#     # For Python 3.0 and later
+#     from urllib.request import urlopen
+# except ImportError:
+#     # Fall back to Python 2's urllib2
+#     from urllib2 import urlopen
+import requests
 import json
 
 
@@ -16,12 +16,12 @@ class ShapeShiftIO(object):
         self.baseurl = "https://shapeshift.io"
 
     def get_request(self, url):
-        ret = urlopen(urllib2.Request(url))
-        return json.loads(ret.read())
+        ret = requests.get(url)
+        return json.loads(ret.text)
 
     def post_request(self, url, postdata):
-        ret = urlopen(urllib2.Request(url, urllib.urlencode(postdata)))
-        return json.loads(ret.read())
+        ret = requests.post(url, postdata)
+        return json.loads(ret.text)
 
     def rate(self, pair):
         """
